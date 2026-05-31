@@ -1,0 +1,29 @@
+# Metacognition Engine Configuration
+# Controls how AIOS assesses its own confidence
+
+# Confidence threshold (0.0-1.0)
+# Below this, response is flagged as "uncertain"
+threshold: 0.65
+
+# Assessment model (keep small for <2s response)
+model: "base"  # Options: base, small, medium
+
+# Black box recorder
+black_box:
+  enabled: true
+  max_entries: 10000
+  auto_rotate: true  # Rotate when max_entries reached
+  log_all: true      # Log ALL assessments regardless of outcome
+
+# Assessment criteria weights (must sum to 1.0)
+weights:
+  tool_success: 0.30     # Did tools execute correctly?
+  llm_certainty: 0.25    # LLM confidence indicators
+  context_relevance: 0.25 # How relevant is the context?
+  error_signals: 0.20    # Were there any errors?
+
+# Response behavior when confidence is low
+low_confidence_behavior:
+  warn_user: true        # Add warning to response
+  suggest_clarification: true
+  never_silence_errors: true
