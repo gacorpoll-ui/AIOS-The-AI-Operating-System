@@ -1,0 +1,46 @@
+# Parliament Decision System Configuration
+# Triggers multi-agent deliberation for high-stakes decisions
+
+# High-stakes triggers (tool names that require parliament)
+high_stakes_tools:
+  - "kill_process"
+  - "write_file"
+  - "run_command"
+  - "delete_all"
+
+# Threshold for confidence below which parliament is triggered
+# If metacog confidence < this value AND high-stakes tool used → parliament
+confidence_threshold: 0.50
+
+# Parliament settings
+parliament:
+  max_rounds: 3
+  max_time_seconds: 90
+  timeout_per_round: 25
+
+  # Agent roles in parliament
+  agents:
+    - id: "advocate"
+      role: "Argues in favor of the action"
+      weight: 1.0
+    - id: "critic"
+      role: "Argues against the action, highlights risks"
+      weight: 1.2
+    - id: "risk_assessor"
+      role: "Evaluates potential damage and recovery options"
+      weight: 1.0
+    - id: "judge"
+      role: "Reviews all arguments and renders final verdict"
+      weight: 1.5  # Judge has final say weight
+
+  # Verdict options
+  verdict_options:
+    - "APPROVE"
+    - "APPROVE_WITH_CONDITIONS"
+    - "REJECT"
+    - "DEFER"
+
+  # Logging
+  black_box:
+    log_all_arguments: true
+    log_verdict: true
