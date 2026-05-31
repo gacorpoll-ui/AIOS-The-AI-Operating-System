@@ -31,6 +31,11 @@ class NLShell:
         self._running = False
         self.voice_mode = False
         self.voice = None
+        try:
+            from agent.core.reporter import AutoReporter
+            self.reporter = AutoReporter()
+        except ImportError:
+            self.reporter = None
         
     def run(self) -> None:
         self._running = True
@@ -54,7 +59,23 @@ class NLShell:
                     self.voice_mode = not self.voice_mode
                     print(f"Voice mode {'enabled' if self.voice_mode else 'disabled'}")
                     continue
-                    
+
+                if user_input.lower() == "--report":
+                    if self.reporter:
+                        report = self.reporter.daily_report()
+                        print(self.reporter.format_report(report))
+                    else:
+                        print("[error] Reporter not available.")
+                    continue
+
+                if user_input.lower() == "--report weekly":
+                    if self.reporter:
+                        report = self.reporter.weekly_report()
+                        print(self.reporter.format_report(report))
+                    else:
+                        print("[error] Reporter not available.")
+                    continue
+
                 response = self.interpret(user_input)
                 print_response(response)
                 
@@ -73,6 +94,7 @@ class NLShell:
 
     def run_batch(self, tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Run a list of tasks from a batch file without user interaction."""
+        import time
         results = []
         print(f"\n[batch] Running {len(tasks)} tasks...\n")
 
@@ -82,7 +104,9 @@ class NLShell:
                 continue
 
             print(f"[{i}/{len(tasks)}] {goal}")
+            start = time.time()
             response = self.interpret(goal)
+            duration_ms = int((time.time() - start) * 1000)
 
             result = {
                 "task": goal,
@@ -92,8 +116,13 @@ class NLShell:
             }
             results.append(result)
 
+            # Log to reporter
+            if self.reporter:
+                self.reporter.log_task(
+                    goal, response.success, response.message or "",
+                    "" if response.success else response.message or "", duration_ms)
+
             if response.success:
-                # Print first 200 chars of response
                 msg = response.message or ""
                 if len(msg) > 200:
                     msg = msg[:197] + "..."
@@ -453,6 +482,18 @@ def main():
         print("  aios-shell --ai-provider claude --ai-key YOUR_KEY")
         print("  aios-shell --ai-provider ollama  (no key needed)")
         print("  aios-shell --ai-config           (use ~/.aios/ai_config.json)")
+
+    # Report mode: show daily or weekly report and exit
+    if "--report" in sys.argv:
+        if shell.reporter:
+            if "weekly" in sys.argv:
+                report = shell.reporter.weekly_report()
+            else:
+                report = shell.reporter.daily_report()
+            print(shell.reporter.format_report(report))
+        else:
+            print("[error] Reporter not available.")
+        return
 
     # Batch mode: run tasks from JSON file
     batch_idx = None
