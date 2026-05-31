@@ -269,12 +269,86 @@ class NLShell:
             tool_calls=[], success=False, follow_up_suggestions=["help"]
         )
 
+def _parse_ai_args():
+    """Parse --ai-provider and --ai-model from command line."""
+    import sys
+    provider = None
+    model = None
+    api_key = None
+    base_url = None
+    args = sys.argv[1:]
+
+    for i, arg in enumerate(args):
+        if arg == "--ai-provider" and i + 1 < len(args):
+            provider = args[i + 1].lower()
+        elif arg == "--ai-model" and i + 1 < len(args):
+            model = args[i + 1]
+        elif arg == "--ai-key" and i + 1 < len(args):
+            api_key = args[i + 1]
+        elif arg == "--ai-url" and i + 1 < len(args):
+            base_url = args[i + 1]
+
+    return provider, model, api_key, base_url
+
+
 def main():
     """Entry point for aios-shell command."""
     import os
     os.makedirs(os.path.expanduser("~/.aios"), exist_ok=True)
 
-    llm = LocalLLM()
+    # Check for external AI provider first
+    provider_name, model, api_key, base_url = _parse_ai_args()
+    use_config = "--ai-config" in sys.argv
+
+    if provider_name or use_config:
+        try:
+            from agent.models.cloud_llm import CloudLLM, AIProvider
+
+            if use_config:
+                llm = CloudLLM.from_config()
+                provider_str = llm.provider.value
+            else:
+                provider_map = {
+                    "openai": AIProvider.OPENAI,
+                    "anthropic": AIProvider.ANTHROPIC,
+                    "claude": AIProvider.ANTHROPIC,
+                    "gemini": AIProvider.GEMINI,
+                    "ollama": AIProvider.OLLAMA,
+                    "custom": AIProvider.CUSTOM,
+                }
+                provider_enum = provider_map.get(provider_name, AIProvider.OPENAI)
+                llm = CloudLLM(
+                    provider=provider_enum,
+                    api_key=api_key,
+                    model=model,
+                    base_url=base_url,
+                )
+                provider_str = provider_name
+
+            if llm.is_loaded:
+                print(f"[AI] Using {provider_str.upper()} provider ({llm.model})")
+            else:
+                print(f"[AI] {provider_str.upper()} selected but no API key found. Falling back to demo mode.")
+                llm = LocalLLM()
+        except Exception as e:
+            print(f"[AI] Failed to load cloud provider: {e}. Falling back to demo mode.")
+            llm = LocalLLM()
+    else:
+        # Try config file first, then local LLM
+        try:
+            from agent.models.cloud_llm import CloudLLM
+            config_path = os.path.expanduser("~/.aios/ai_config.json")
+            if os.path.exists(config_path):
+                llm = CloudLLM.from_config()
+                if llm.is_loaded:
+                    print(f"[AI] Using {llm.provider.value.upper()} from config ({llm.model})")
+                else:
+                    llm = LocalLLM()
+            else:
+                llm = LocalLLM()
+        except ImportError:
+            llm = LocalLLM()
+
     memory = MemoryEngine(db_path=os.path.expanduser("~/.aios/shell_memory"))
     tools = ToolRegistry(db_path=os.path.expanduser("~/.aios/shell_tools.db"))
 
@@ -309,6 +383,14 @@ def main():
         except ImportError:
             print("[warning] Voice dependencies not installed. Voice mode disabled.")
             shell.voice_mode = False
+
+    # Print available providers hint
+    if not llm.is_loaded:
+        print("\n[tip] Connect an AI provider with:")
+        print("  aios-shell --ai-provider openai --ai-key YOUR_KEY")
+        print("  aios-shell --ai-provider claude --ai-key YOUR_KEY")
+        print("  aios-shell --ai-provider ollama  (no key needed)")
+        print("  aios-shell --ai-config           (use ~/.aios/ai_config.json)")
 
     try:
         shell.run()
