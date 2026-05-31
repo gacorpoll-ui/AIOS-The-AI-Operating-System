@@ -1,0 +1,44 @@
+{
+  "rules": [
+    {
+      "id": "disk_cleanup",
+      "name": "Disk Space Monitor",
+      "trigger": "disk > 80",
+      "action": "Clean temp files and old logs",
+      "priority": "medium",
+      "enabled": true
+    },
+    {
+      "id": "cpu_monitor",
+      "name": "High CPU Alert",
+      "trigger": "cpu > 90",
+      "action": "Identify and report processes using excessive CPU",
+      "priority": "high",
+      "enabled": true
+    },
+    {
+      "id": "memory_alert",
+      "name": "Memory Pressure",
+      "trigger": "memory > 90",
+      "action": "Identify memory-heavy processes and suggest cleanup",
+      "priority": "high",
+      "enabled": true
+    },
+    {
+      "id": "security_scan",
+      "name": "Security Check",
+      "trigger": "schedule: daily",
+      "action": "Scan running processes for anomalies",
+      "priority": "medium",
+      "enabled": true
+    },
+    {
+      "id": "log_rotation",
+      "name": "Log Maintenance",
+      "trigger": "schedule: weekly",
+      "action": "Archive and rotate old log files",
+      "priority": "low",
+      "enabled": true
+    }
+  ]
+}
