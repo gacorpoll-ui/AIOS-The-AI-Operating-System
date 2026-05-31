@@ -1,0 +1,31 @@
+# AIOS Self-Evolution System Configuration
+# Controls how AIOS learns, adapts, and improves itself
+
+evolution:
+  enabled: true  # Set to false to disable evolution entirely
+
+  # How often evolution cycle runs (seconds)
+  cycle_interval: 3600  # 1 hour
+
+  # Minimum data points needed before evolution runs
+  min_assessments: 50
+
+  # Evolution types
+  types:
+    tool_optimization: true     # Suggest tool improvements
+    rule_tuning: true           # Adjust thresholds based on patterns
+    workflow_discovery: true    # Find new tool sequences from history
+    error_prevention: true      # Learn from past failures
+
+  # Safety limits
+  safety:
+    max_changes_per_cycle: 5    # Limit auto-applied changes
+    require_approval_for:       # Changes that need human approval
+      - "security_threshold_change"
+      - "new_tool_registration"
+      - "permission_escalation"
+
+  # Black box integration
+  black_box:
+    analysis_window: 1000       # Number of recent events to analyze
+    log_evolution_as: "SYSTEM"  # Agent ID for evolution logs
