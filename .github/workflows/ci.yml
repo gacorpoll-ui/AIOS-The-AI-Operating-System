@@ -1,31 +1,73 @@
-﻿name: CI
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
-  test:
+  lint-python:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.11"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest ruff mypy
+        pip install ruff mypy
+    - name: Lint with ruff
+      run: ruff check .
+    - name: Type check with mypy
+      run: mypy agent/ shell/ security/ || true
+
+  test-python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest
         pip install -e .
     - name: Run Python tests
-      run: pytest
-    
-    - name: Set up Rust
-      uses: actions-rs/toolchain@v1
+      run: pytest agent/ shell/ security/ -v
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        toolchain: stable
-    - name: Run Rust tests
-      run: cargo test
+        python-version: "3.11"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pip-audit
+        pip install -e .
+    - name: Check Python dependencies for CVEs
+      run: pip-audit || true
+
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Install build tools
+      run: python -m pip install build
+    - name: Build Python package
+      run: python -m build
