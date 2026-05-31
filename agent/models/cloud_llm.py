@@ -25,12 +25,14 @@ class CloudLLM:
         model: str = None,
         base_url: Optional[str] = None,
         api_version: Optional[str] = None,
+        streaming: bool = False,
     ):
         self.provider = provider
         self.api_key = api_key or self._get_default_key(provider)
         self.model = model or self._get_default_model(provider)
         self.base_url = base_url or self._get_default_url(provider)
         self.api_version = api_version
+        self.streaming = streaming
         self._is_loaded = bool(self.api_key or provider == AIProvider.OLLAMA)
 
     @staticmethod
@@ -144,17 +146,65 @@ class CloudLLM:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
-        data = json.dumps({
+        body = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": max_tokens,
             "temperature": temperature,
-        }).encode("utf-8")
+            "stream": self.streaming,
+        }
+        data = json.dumps(body).encode("utf-8")
 
         req = urllib.request.Request(f"{url}/chat/completions", data=data, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            content_type = resp.headers.get("Content-Type", "")
+
+            # Streaming response (SSE format)
+            if "text/event-stream" in content_type or self.streaming:
+                return self._read_stream(resp)
+
+            # Standard JSON response
             result = json.loads(resp.read().decode())
-            return result["choices"][0]["message"]["content"]
+            if "choices" in result and result["choices"]:
+                msg = result["choices"][0].get("message")
+                if msg and "content" in msg:
+                    return msg["content"]
+                # Some APIs return content directly in choices[0].text
+                delta = result["choices"][0].get("delta")
+                if delta and "content" in delta:
+                    return delta["content"]
+            return ""
+
+    def _read_stream(self, resp) -> str:
+        """Read SSE streaming response and assemble full text."""
+        full_text = ""
+        buffer = b""
+        while True:
+            chunk = resp.read(4096)
+            if not chunk:
+                break
+            buffer += chunk
+            lines = buffer.split(b"\n")
+            buffer = lines[-1]
+            for line in lines[:-1]:
+                line = line.strip()
+                if not line or line == b"data: [DONE]":
+                    continue
+                if line.startswith(b"data: "):
+                    try:
+                        data_str = line[6:].decode("utf-8", errors="replace")
+                        data = json.loads(data_str)
+                        choices = data.get("choices", [])
+                        if not choices:
+                            continue
+                        choice = choices[0]
+                        delta = choice.get("delta", {})
+                        content = delta.get("content", "")
+                        if content:
+                            full_text += content
+                    except (json.JSONDecodeError, UnicodeDecodeError, IndexError):
+                        continue
+        return full_text
 
     def _call_openai_embedding(self, text: str) -> List[float]:
         import urllib.request
@@ -243,6 +293,7 @@ class CloudLLM:
                 api_key=cfg.get("api_key"),
                 model=cfg.get("model"),
                 base_url=cfg.get("base_url"),
+                streaming=cfg.get("streaming", False),
             )
         # No config file, return default OpenAI
         return cls(provider=AIProvider.OPENAI)
@@ -256,6 +307,7 @@ class CloudLLM:
             "api_key": self.api_key,
             "model": self.model,
             "base_url": self.base_url,
+            "streaming": self.streaming,
         }
         with open(path, "w") as f:
             json.dump(cfg, f, indent=2)

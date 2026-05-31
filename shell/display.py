@@ -1,7 +1,16 @@
 ﻿import sys
+import re
 import time
 import threading
 from typing import Dict, List, Any, Optional
+
+# Strip emoji and other non-ASCII characters for Windows console compatibility
+def _safe_text(text: str) -> str:
+    """Remove emoji and other characters that Windows console can't display."""
+    if sys.platform == 'win32':
+        # Remove emoji and other high Unicode characters
+        return re.sub(r'[^\x00-\x7F]', '', text)
+    return text
 
 try:
     from rich.console import Console
@@ -55,18 +64,18 @@ def print_response(response: Any) -> None:
     if not RICH_AVAILABLE:
         SimpleDisplay.print_response(response)
         return
-        
+
     if response.message:
-        # Check if message looks like an error
+        msg = _safe_text(response.message)
         if response.success is False:
-            console.print(Panel(response.message, border_style="red", title="Error"))
+            console.print(Panel(msg, border_style="red", title="Error"))
         else:
-            console.print(f"\n{response.message}\n")
-            
+            console.print(f"\n{msg}\n")
+
     if getattr(response, "follow_up_suggestions", None):
         console.print("[dim italic]Suggestions:[/dim italic]")
         for suggestion in response.follow_up_suggestions:
-            console.print(f"[dim]• {suggestion}[/dim]")
+            console.print(f"[dim]- {_safe_text(suggestion)}[/dim]")
             
 def print_table(data: List[Dict[str, Any]], title: str = "") -> None:
     if not RICH_AVAILABLE:
