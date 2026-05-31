@@ -1,0 +1,27 @@
+# AIOS Prediction Engine Configuration
+# Controls user action prediction and silent pre-warm
+
+prediction:
+  enabled: true  # Set to false to disable entirely
+
+  # CPU limit for background pre-warm (0.0-1.0)
+  max_cpu_fraction: 0.20  # 20% max
+
+  # How far ahead to predict (seconds)
+  prediction_window: 300  # 5 minutes
+
+  # Minimum data points before predictions start
+  min_history: 30
+
+  # Pattern detection
+  patterns:
+    time_based: true      # "user always runs 'show files' at 9am"
+    sequence_based: true  # "after 'show system', user usually runs 'processes'"
+    frequency_based: true # "user runs 'show files' most often"
+
+  # Pre-warm settings
+  prewarm:
+    enabled: true
+    silent: true           # Never show loading states to user
+    max_items: 3           # Pre-warm at most N predictions
+    timeout_seconds: 5     # Max time for pre-warm operation
