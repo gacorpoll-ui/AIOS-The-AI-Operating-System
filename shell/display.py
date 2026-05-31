@@ -101,7 +101,7 @@ def print_confirmation_prompt(action: str) -> bool:
     if not RICH_AVAILABLE:
         return SimpleDisplay.print_confirmation_prompt(action)
         
-    console.print(Panel(f"[bold yellow]⚠️ WARNING[/bold yellow]\n\nThis will {action}.", border_style="yellow"))
+    console.print(Panel(f"[bold yellow]WARNING[/bold yellow]\n\nThis will {action}.", border_style="yellow"))
     answer = input("Continue? [y/N]: ")
     return answer.lower() == 'y'
     
@@ -115,7 +115,7 @@ def print_tool_call(tool_name: str, params: Dict[str, Any]) -> None:
     if len(param_str) > 50:
         param_str = param_str[:47] + "..."
         
-    console.print(f"[dim grey]⚙️  executing: {tool_name}({param_str})[/dim grey]")
+    console.print(f"[dim grey]executing: {tool_name}({param_str})[/dim grey]")
 
 # Spinner context manager for long running ops
 class ThinkSpinner:

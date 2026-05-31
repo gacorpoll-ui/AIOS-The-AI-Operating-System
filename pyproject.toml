@@ -1,16 +1,47 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "aios"
 version = "0.1.0"
 description = "AI Operating System"
+readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
 dependencies = [
-    "llama-cpp-python",
-    "chromadb",
-    "langchain-core",
-    "whisper",
-    "rich",
-    "prompt_toolkit",
-    "pytest",
-    "ruff",
-    "mypy"
+    "chromadb>=0.4.0",
+    "langchain-core>=0.1.0",
+    "rich>=13.0.0",
+    "prompt_toolkit>=3.0.0",
+    "psutil>=5.9.0",
+    "cryptography>=41.0.0",
+    "pytest>=7.0.0"
 ]
+
+[project.optional-dependencies]
+llm = ["llama-cpp-python>=0.2.0"]
+voice = ["openai-whisper", "pyttsx3", "sounddevice", "numpy"]
+dev = ["ruff>=0.1.0", "mypy>=1.0.0"]
+all = ["aios[llm,voice,dev]"]
+
+[project.scripts]
+aios-shell = "shell.nl_shell:main"
+aios-daemon = "agent.core.daemon:main"
+
+[tool.setuptools.packages.find]
+include = ["agent*", "shell*", "security*"]
+
+[tool.pytest.ini_options]
+testpaths = ["agent/tests", "shell/tests", "security/tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
