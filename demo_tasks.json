@@ -1,0 +1,11 @@
+[
+  {
+    "goal": "show system info"
+  },
+  {
+    "goal": "show files"
+  },
+  {
+    "goal": "processes"
+  }
+]

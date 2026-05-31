@@ -70,7 +70,69 @@ class NLShell:
                 print_error(f"Unexpected error: {str(e)}")
                 
         print("\nShutting down AIOS shell. Goodbye.")
-        
+
+    def run_batch(self, tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Run a list of tasks from a batch file without user interaction."""
+        results = []
+        print(f"\n[batch] Running {len(tasks)} tasks...\n")
+
+        for i, task in enumerate(tasks, 1):
+            goal = task.get("goal", task.get("command", ""))
+            if not goal:
+                continue
+
+            print(f"[{i}/{len(tasks)}] {goal}")
+            response = self.interpret(goal)
+
+            result = {
+                "task": goal,
+                "success": response.success,
+                "message": response.message[:500] if response.message else "",
+                "tool_calls": response.tool_calls,
+            }
+            results.append(result)
+
+            if response.success:
+                # Print first 200 chars of response
+                msg = response.message or ""
+                if len(msg) > 200:
+                    msg = msg[:197] + "..."
+                print(f"  -> {msg}\n")
+            else:
+                print(f"  -> ERROR: {response.message}\n")
+
+        summary = {
+            "total": len(results),
+            "success": sum(1 for r in results if r["success"]),
+            "failed": sum(1 for r in results if not r["success"]),
+            "results": results,
+        }
+        print(f"\n[batch] Done: {summary['success']}/{summary['total']} succeeded")
+        return results
+
+    def run_watch(self, interval: int = 5) -> None:
+        """Watch mode: continuously listen for commands."""
+        self._running = True
+        print("\n[watch] AIOS Shell in watch mode (Ctrl+C to stop)\n")
+
+        while self._running:
+            try:
+                prefix = "watch > "
+                user_input = input(prefix).strip()
+                if not user_input:
+                    continue
+                if user_input.lower() in ["exit", "quit"]:
+                    break
+                response = self.interpret(user_input)
+                print_response(response)
+            except EOFError:
+                break
+            except KeyboardInterrupt:
+                print("\n[watch] Stopped.")
+                break
+
+        print("\nExiting watch mode.")
+
     def interpret(self, user_input: str) -> ShellResponse:
         # Fallback: if LLM not loaded, try to parse direct commands
         if not self.llm.is_loaded:
@@ -391,6 +453,44 @@ def main():
         print("  aios-shell --ai-provider claude --ai-key YOUR_KEY")
         print("  aios-shell --ai-provider ollama  (no key needed)")
         print("  aios-shell --ai-config           (use ~/.aios/ai_config.json)")
+
+    # Batch mode: run tasks from JSON file
+    batch_idx = None
+    for i, arg in enumerate(sys.argv):
+        if arg == "--batch" and i + 1 < len(sys.argv):
+            batch_idx = i + 1
+            break
+
+    if batch_idx is not None:
+        batch_file = sys.argv[batch_idx]
+        try:
+            with open(batch_file, "r") as f:
+                batch_data = json.load(f)
+            # Support both list format and {"tasks": [...]} format
+            tasks = batch_data if isinstance(batch_data, list) else batch_data.get("tasks", [])
+            shell.run_batch(tasks)
+        except FileNotFoundError:
+            print(f"[error] Batch file not found: {batch_file}")
+        except json.JSONDecodeError as e:
+            print(f"[error] Invalid JSON in batch file: {e}")
+        return  # Exit after batch mode
+
+    # Watch mode
+    if "--watch" in sys.argv:
+        interval = 5
+        watch_idx = None
+        for i, arg in enumerate(sys.argv):
+            if arg == "--watch-interval" and i + 1 < len(sys.argv):
+                watch_idx = i + 1
+                break
+        if watch_idx is not None:
+            try:
+                interval = int(sys.argv[watch_idx])
+            except ValueError:
+                pass
+        shell.run_watch(interval)
+        memory.close()
+        return
 
     try:
         shell.run()
