@@ -3,7 +3,8 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-green.svg)
 ![Rust 2021](https://img.shields.io/badge/Rust-2021-orange.svg)
-![Tests](https://img.shields.io/badge/Tests-39%20Passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/Tests-52%20Passing-brightgreen.svg)
+[![CI](https://github.com/gacorpoll-ui/AIOS-The-AI-Operating-System/actions/workflows/ci.yml/badge.svg)](https://github.com/gacorpoll-ui/AIOS-The-AI-Operating-System/actions/workflows/ci.yml)
 
 > **AIOS** is an experimental operating system concept where the AI is the kernel, rather than just an application running on top of the OS. It provides an intelligent agent that serves as your primary interaction layer — capable of executing shell commands, planning long-running tasks, remembering context across reboots, and monitoring system health autonomously.
 
@@ -123,27 +124,107 @@ pip install -e ".[all]"
 pip install -e .
 ```
 
-### 2. Start the AI Daemon
+### 2. Connect to an AI Provider
 
+AIOS supports multiple AI backends — choose one:
+
+**Option A: Custom AI (default)**
 ```bash
-# Linux/macOS:
-./scripts/start_daemon.sh
-
-# Windows (PowerShell):
-python -m agent.core.daemon
+# AIOS auto-connects if config exists at ~/.aios/ai_config.json
+# Or use command line:
+python -m shell.nl_shell --ai-provider custom --ai-model code --ai-key YOUR_KEY --ai-url http://localhost:20128/v1
 ```
 
-### 3. Open the NL Shell
-
+**Option B: OpenAI (ChatGPT)**
 ```bash
-# Mode teks standar:
-aios-shell
-
-# Atau langsung dari Python:
-python -c "from shell.nl_shell import NLShell; from agent.core.daemon import AIOSDaemon; ..."
+aios-shell --ai-provider openai --ai-key sk-your-key
+# or set env: setx OPENAI_API_KEY "sk-your-key"
 ```
 
-### 4. Enable Voice Mode *(opsional)*
+**Option C: Claude (Anthropic)**
+```bash
+aios-shell --ai-provider claude --ai-key sk-ant-your-key
+```
+
+**Option D: Ollama (local, free, no API key)**
+```bash
+aios-shell --ai-provider ollama
+```
+
+### 3. Run AIOS
+
+**Windows (double-click):**
+```
+run_aios_custom.bat
+```
+
+**Command line:**
+```bash
+aios-shell --ai-config
+```
+
+### 4. Start Giving Commands
+
+```
+aios > help
+aios > show files
+aios > show system info
+aios > processes
+aios > run echo hello world
+aios > exit
+```
+
+### ✅ Screenshot — AIOS Running Successfully
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  AIOS Shell v0.1.0 — Connected to Custom AI (code)              │
+│  Endpoint: http://localhost:20128/v1                            │
+├─────────────────────────────────────────────────────────────────┤
+│  [AI] Using CUSTOM provider (code)                              │
+│                                                                 │
+│  Welcome to AIOS NL Shell.                                      │
+│  Type 'exit' or press Ctrl+D to quit.                           │
+│                                                                 │
+│  aios > help                                                    │
+│  How can I assist you? I can help with reading and writing      │
+│  files, searching for files, managing processes, running shell  │
+│  commands, getting system and network information, and more.    │
+│                                                                 │
+│  aios > show files                                              │
+│  executing: list_directory(path=.)                              │
+│                                                                 │
+│  Here are the files and folders in the current directory:       │
+│  **Directories**                                                │
+│  * agent      * config    * gui       * scripts    * shell      │
+│  * aios.egg   * docs      * kernel    * security   * tests      │
+│                                                                 │
+│  **Files**                                                      │
+│  * Cargo.toml  * CLAUDE.md  * pyproject.toml                    │
+│  * README.md   * run_aios_custom.bat                            │
+│                                                                 │
+│  aios > show system info                                        │
+│  executing: get_system_info()                                   │
+│                                                                 │
+│  Here is the current system information for host Beta:          │
+│  **System & OS**                                                │
+│   * Operating System: Windows Server 2022 (Version 10.0.20348)  │
+│   * Architecture: AMD64 (64-bit)                                │
+│   * Hostname: Beta                                              │
+│  **Hardware & Performance**                                     │
+│   * Processor: Intel64 | 4 cores                                │
+│   * CPU Usage: 46.5%    * Memory: 55.99 GB (33.0% in use)       │
+│   * Disk Usage: 18.7%                                           │
+│  **Uptime**                                                     │
+│   * System Uptime: ~18 days, 22 hours, 54 minutes               │
+│                                                                 │
+│  aios > exit                                                    │
+│  Shutting down AIOS shell. Goodbye.                             │
+│  Session saved. Goodbye.                                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 5. Enable Voice Mode *(opsional)*
 
 ```bash
 # Install dependensi suara
