@@ -81,6 +81,10 @@ class TamperProofBlackBox:
         content = f"{timestamp}|{event_type}|{data_json}|{prev_hash}"
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
+    def _conn(self):
+        """Get connection for external modules (parliament, etc)."""
+        return sqlite3.connect(self._current_db)
+
     def insert(self, event_type: str, data: Dict[str, Any]) -> str:
         """Insert event. Returns self_hash. INSERT-ONLY enforced by trigger."""
         timestamp = datetime.now(timezone.utc).isoformat()

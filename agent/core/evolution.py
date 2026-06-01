@@ -162,9 +162,9 @@ class EvolutionEngine:
 
     def __init__(self, config_path: str = None, black_box=None):
         if config_path is None:
-            config_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                "config", "evolution.yaml")
+            # agent/core/ -> agent/ -> aios/ (root) -> config/
+            root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+            config_path = os.path.join(root, "config", "evolution.yaml")
 
         self.config = _parse_yaml(config_path) if os.path.exists(config_path) else {}
         evo_cfg = self.config.get("evolution", {})

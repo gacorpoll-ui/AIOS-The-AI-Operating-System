@@ -1,4 +1,4 @@
-"""Parliament System — Multi-agent deliberation for high-stakes decisions.
+"""Parliament System â€” Multi-agent deliberation for high-stakes decisions.
 
 When a high-stakes tool is about to execute with low confidence, the parliament
 convenes: multiple agents deliberate and the judge renders a FINAL verdict.
@@ -16,7 +16,7 @@ from dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 
-# ── YAML Parser ────────────────────────────────────────────────────
+# â”€â”€ YAML Parser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _parse_yaml(path: str) -> Dict[str, Any]:
     """Minimal YAML parser supporting: scalars, lists, dicts, nesting."""
@@ -134,7 +134,7 @@ def _yaml_val(s: str) -> Any:
     return s.strip('"').strip("'")
 
 
-# ── Dataclasses ─────────────────────────────────────────────────────
+# â”€â”€ Dataclasses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @dataclass
 class AgentArgument:
@@ -170,16 +170,16 @@ class ParliamentRecord:
     arguments_json: str = ""  # Full JSON of all arguments
 
 
-# ── Parliament ─────────────────────────────────────────────────────
+# â”€â”€ Parliament â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class Parliament:
     """Multi-agent deliberation for high-stakes decisions."""
 
     def __init__(self, config_path: str = None, black_box=None):
         if config_path is None:
-            config_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                "config", "parliament.yaml")
+            # agent/core/parliament.py → agent/core → agent → aios (root)
+            root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            config_path = os.path.join(root, "config", "parliament.yaml")
 
         self.config = _parse_yaml(config_path) if os.path.exists(config_path) else {}
         self.high_stakes_tools = self.config.get("high_stakes_tools", [])
@@ -304,7 +304,7 @@ class Parliament:
                     f"After {round_num} rounds of deliberation, the opposition outweighs support "
                     f"({against_count} against vs {for_count} for). "
                     f"Risk factors identified: {risk_count}. "
-                    f"Verdict: REJECT — action requires additional user confirmation."
+                    f"Verdict: REJECT â€” action requires additional user confirmation."
                 )
                 confidence = 0.60
             elif for_count > against_count:
@@ -312,13 +312,13 @@ class Parliament:
                     f"After {round_num} rounds of deliberation, support outweighs opposition "
                     f"({for_count} for vs {against_count} against). "
                     f"Risk factors acknowledged but manageable. "
-                    f"Verdict: APPROVE_WITH_CONDITIONS — proceed with user confirmation."
+                    f"Verdict: APPROVE_WITH_CONDITIONS â€” proceed with user confirmation."
                 )
                 confidence = 0.80
             else:
                 reasoning = (
                     f"After {round_num} rounds, arguments are balanced. "
-                    f"Verdict: DEFER — requires explicit user review before proceeding."
+                    f"Verdict: DEFER â€” requires explicit user review before proceeding."
                 )
                 confidence = 0.50
         else:
@@ -367,7 +367,7 @@ class Parliament:
                 decision=decision,
             )
 
-        # No judge found — default
+        # No judge found â€” default
         return ParliamentVerdict(
             verdict="DEFER",
             reasoning="No judge argument found. Defaulting to DEFER.",
@@ -382,7 +382,7 @@ class Parliament:
                           tool_name: str, tool_params: str) -> None:
         """Permanently store parliament record in black box."""
         if not self.black_box:
-            logger.warning("No black box available — parliament record not stored")
+            logger.warning("No black box available â€” parliament record not stored")
             return
 
         args_json = json.dumps([
