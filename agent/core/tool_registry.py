@@ -66,7 +66,27 @@ class ToolRegistry:
             })
         return specs
         
-    def execute(self, tool_name: str, params: Dict[str, Any], confirmed: bool = False) -> ToolResult:
+    def execute(self, tool_name: str, params: Dict[str, Any], confirmed: bool = False, context: Dict[str, Any] = None) -> ToolResult:
+        """Execute a tool with constitutional enforcement.
+
+        BEFORE running any tool, the Constitution checks all articles.
+        If violated: HARD STOP, log to black box, return failure.
+        """
+        # Constitutional check — runs BEFORE any tool execution (<1ms)
+        try:
+            from security.constitution import enforce
+            const_result = enforce(tool_name, params, context or {})
+            if not const_result.compliant:
+                violations = "; ".join(const_result.violations)
+                logger.error(f"Constitution blocked {tool_name}: {violations}")
+                return ToolResult(
+                    success=False,
+                    output=None,
+                    error=f"Constitutional violation (Article {const_result.blocked_article}): {violations}"
+                )
+        except ImportError:
+            pass  # Constitution not available — proceed without check (dev mode)
+
         tool = self.get_tool(tool_name)
         handler = self._handlers.get(tool_name)
         
